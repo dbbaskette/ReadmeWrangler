@@ -1,0 +1,101 @@
+spring:
+  application:
+    name: readme-wrangler
+
+  profiles:
+    active: local
+
+  ai:
+    mcp:
+      server:
+        protocol: STREAMABLE
+        name: readme-wrangler-mcp
+        type: SYNC
+        streamable-http:
+          mcp-endpoint: /mcp
+          keep-alive-interval: 30s
+        capabilities:
+          tools: true
+          resources: true
+          prompts: true
+          logging: true
+    openai:
+      api-key: ${OPENAI_API_KEY:your-api-key-here}
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.7
+
+server:
+  port: 8080
+
+wrangler:
+  addTocThresholdHeadings: 4
+  headingStyle: "atx"
+  codeFenceLanguages:
+    - java
+    - bash
+    - yaml
+  badges:
+    enabled: true
+    ci: "GitHub Actions"
+    jdk: "21"
+  guardrails:
+    maxChangesPerFile: 300
+    requireMcpApproval: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    com.baskettecase: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+logging:
+  level:
+    com.baskettecase: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: cloud
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    com.baskettecase: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: no-ai
+  autoconfigure:
+    exclude:
+      - com.embabel.agent.config.AgentPlatformAutoConfiguration
+      - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+
+logging:
+  level:
+    com.baskettecase: DEBUG
+
+wrangler:
+  addTocThresholdHeadings: 4

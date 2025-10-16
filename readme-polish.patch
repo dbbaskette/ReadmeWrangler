@@ -1,0 +1,115 @@
+--- a//Users/dbbaskette/Projects/ReadmeWrangler/README.md	2025-10-16 13:53:15 -0400
++++ b//Users/dbbaskette/Projects/ReadmeWrangler/README.md	2025-10-16 13:53:15 -0400
+@@ -1,590 +1,674 @@
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
+-```
++## Table of Contents
++- [📝 README Wrangler](#readme-wrangler)
++  - [🎯 Features](#features)
++    - [Core Capabilities](#core-capabilities)
++    - [AI & Agent Features](#ai-agent-features)
++    - [Interfaces](#interfaces)
++  - [📋 Table of Contents](#table-of-contents)
++  - [🚀 Quick Start](#quick-start)
++    - [Prerequisites](#prerequisites)
++    - [Build and Run](#build-and-run)
++- [Clone the repository](#clone-the-repository)
++- [Copy .env.example to .env and add your OpenAI API key](#copy-envexample-to-env-and-add-your-openai-api-key)
++- [Edit .env and set OPENAI_API_KEY=sk-your-actual-key-here](#edit-env-and-set-openaiapikeysk-your-actual-key-here)
++- [Build the project](#build-the-project)
++- [Run with local profile (automatically loads .env)](#run-with-local-profile-automatically-loads-env)
++- [Or use Maven directly](#or-use-maven-directly)
++  - [📦 Installation](#installation)
++    - [From Source](#from-source)
++- [Build the JAR](#build-the-jar)
++- [The executable JAR will be at:](#the-executable-jar-will-be-at)
++- [target/readme-wrangler-1.0.0-SNAPSHOT.jar](#targetreadme-wrangler-100-snapshotjar)
++    - [System Requirements](#system-requirements)
++  - [💻 Usage](#usage)
++    - [MCP Client (Claude Desktop)](#mcp-client-claude-desktop)
++    - [CLI Usage](#cli-usage)
++      - [Polish Command](#polish-command)
++- [Polish current directory](#polish-current-directory)
++- [Polish specific repository](#polish-specific-repository)
++- [Write patch to file](#write-patch-to-file)
++- [Customize settings](#customize-settings)
++      - [Apply Command](#apply-command)
++- [Apply patch to files](#apply-patch-to-files)
++- [Create branch and apply](#create-branch-and-apply)
++    - [REST API](#rest-api)
++- [Start server](#start-server)
++- [Polish a repository via API](#polish-a-repository-via-api)
++      - [API Endpoints](#api-endpoints)
++  - [🔌 MCP Tools](#mcp-tools)
++    - [1. scan_repository](#1-scanrepository)
++    - [2. polish_readme](#2-polishreadme)
++    - [3. approve_patch](#3-approvepatch)
++    - [4. reject_patch](#4-rejectpatch)
++    - [5. list_pending_patches](#5-listpendingpatches)
++    - [6. generate_test_command](#6-generatetestcommand)
++  - [🌱 Embabel Agent](#embabel-agent)
++    - [Agent Architecture](#agent-architecture)
++    - [Key Benefits](#key-benefits)
++    - [Actions & Goals](#actions-goals)
++  - [⚙️ Configuration](#configuration)
++    - [Profiles](#profiles)
++  - [🏗️ Architecture](#architecture)
++    - [Key Components](#key-components)
++  - [🛠️ Development](#development)
++    - [Project Structure](#project-structure)
++    - [Building](#building)
++- [Clean build](#clean-build)
++- [Skip tests](#skip-tests)
++- [Run tests only](#run-tests-only)
++- [Run with specific profile](#run-with-specific-profile)
++  - [🧪 Testing](#testing)
++- [Run all tests](#run-all-tests)
++- [Run specific test class](#run-specific-test-class)
++- [Run with coverage](#run-with-coverage)
++    - [Test Fixtures](#test-fixtures)
++  - [🚀 Deployment](#deployment)
++    - [Cloud Foundry](#cloud-foundry)
++- [Build the application](#build-the-application)
++- [Deploy to Cloud Foundry](#deploy-to-cloud-foundry)
++- [Check status](#check-status)
++- [View logs](#view-logs)
++    - [Docker (Future)](#docker-future)
++  - [📚 Examples](#examples)
++    - [Example 1: Polish Maven App](#example-1-polish-maven-app)
++    - [Example 2: API Usage](#example-2-api-usage)
++  - [📖 How to Run Tests](#how-to-run-tests)
++- [Using Maven](#using-maven)
++- [Using Maven wrapper (if available)](#using-maven-wrapper-if-available)
++- [Run specific test](#run-specific-test)
++  - [🤝 Contributing](#contributing)
++    - [Code Standards](#code-standards)
++  - [📄 License](#license)
++  - [🙏 Acknowledgments](#acknowledgments)
+ # 📝 README Wrangler
+ 
