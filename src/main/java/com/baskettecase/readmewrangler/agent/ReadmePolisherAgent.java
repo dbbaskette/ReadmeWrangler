@@ -69,14 +69,28 @@ public class ReadmePolisherAgent {
         context = context.withSnapshot(snapshot);
 
         // Consolidate documentation files if needed
+        DocConsolidationTool.ConsolidationResult consolidationResult = null;
+        String consolidationPatch = "";
+        List<Path> filesToDelete = List.of();
+
         if (shouldConsolidateDocs(context.repoPath())) {
-            consolidateDocsGoal(context.repoPath());
+            consolidationResult = consolidateDocsGoal(context.repoPath());
+            if (consolidationResult.hasConsolidation()) {
+                // Generate patch for DEVELOPMENT.md creation
+                Path developmentFile = context.repoPath().resolve("DEVELOPMENT.md");
+                consolidationPatch = patchBuilder.createUnifiedDiff(
+                    developmentFile,
+                    "", // No original content
+                    consolidationResult.consolidatedContent()
+                );
+                filesToDelete = consolidationResult.filesToRemove();
+            }
         }
 
         Path readmeFile = findReadme(snapshot);
         if (readmeFile == null) {
             log.warn("No README.md found in repository");
-            return new PatchBundle("", ReadmeImprovements.empty());
+            return new PatchBundle("", ReadmeImprovements.empty(), consolidationPatch, filesToDelete);
         }
 
         String original = Files.readString(readmeFile);
@@ -87,7 +101,7 @@ public class ReadmePolisherAgent {
         ReadmeImprovements improvements = buildImprovements(original, polished, findings);
         String diff = patchBuilder.createUnifiedDiff(readmeFile, original, polished);
 
-        PatchBundle bundle = new PatchBundle(diff, improvements);
+        PatchBundle bundle = new PatchBundle(diff, improvements, consolidationPatch, filesToDelete);
         log.info("Polishing complete: {}", bundle.getSummaryLine());
 
         return bundle;
@@ -253,34 +267,21 @@ public class ReadmePolisherAgent {
 
     /**
      * Action: Consolidate documentation files into DEVELOPMENT.md.
+     * Returns consolidation result for HITL approval.
      */
     @Action(description = "Consolidate multiple documentation files into DEVELOPMENT.md")
-    public void consolidateDocsGoal(Path repoPath) throws IOException {
+    public DocConsolidationTool.ConsolidationResult consolidateDocsGoal(Path repoPath) throws IOException {
         log.info("Consolidating documentation files into DEVELOPMENT.md");
 
         DocConsolidationTool.ConsolidationResult result = docConsolidation.consolidateDocumentation(repoPath);
 
         if (!result.hasConsolidation()) {
             log.info("No documentation files to consolidate");
-            return;
+            return result;
         }
 
-        // Write DEVELOPMENT.md
-        Path developmentFile = repoPath.resolve("DEVELOPMENT.md");
-        Files.writeString(developmentFile, result.consolidatedContent());
-        log.info("Created DEVELOPMENT.md with consolidated documentation");
-
-        // Remove old files
-        for (Path oldFile : result.filesToRemove()) {
-            try {
-                Files.delete(oldFile);
-                log.info("Removed consolidated file: {}", oldFile.getFileName());
-            } catch (IOException e) {
-                log.warn("Failed to remove file {}: {}", oldFile, e.getMessage());
-            }
-        }
-
-        log.info("Documentation consolidation complete: {} files merged", result.filesToRemove().size());
+        log.info("Documentation consolidation prepared: {} files to merge", result.filesToRemove().size());
+        return result;
     }
 
     /**

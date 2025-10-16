@@ -124,6 +124,11 @@ public class ReadmePolishingMcpTools {
             result.put("addedToc", bundle.summary().addedToc());
             result.put("findingsCount", bundle.summary().notes().size());
             result.put("diff", bundle.unifiedDiff());
+            result.put("hasConsolidation", bundle.hasConsolidation());
+            result.put("consolidationPatch", bundle.consolidationPatch());
+            result.put("filesToDelete", bundle.filesToDelete().stream()
+                .map(p -> p.getFileName().toString())
+                .toList());
 
             log.info("Generated patch {}: {}", actualPatchId, bundle.getSummaryLine());
 
@@ -165,9 +170,17 @@ public class ReadmePolishingMcpTools {
                 return Map.of("error", "No changes in patch " + patchId);
             }
 
-            // Write patch to file
+            // Write README patch to file
             Path outPath = Paths.get(outputPath);
-            patchBuilder.writePatchToFile(bundle.unifiedDiff(), outPath);
+            StringBuilder combinedPatch = new StringBuilder();
+            combinedPatch.append(bundle.unifiedDiff());
+
+            // Add consolidation patch if present
+            if (bundle.hasConsolidation()) {
+                combinedPatch.append("\n").append(bundle.consolidationPatch());
+            }
+
+            patchBuilder.writePatchToFile(combinedPatch.toString(), outPath);
 
             // Remove from pending
             pendingPatches.remove(patchId);
@@ -176,7 +189,17 @@ public class ReadmePolishingMcpTools {
             result.put("patchId", patchId);
             result.put("patchFile", outputPath);
             result.put("summary", bundle.getSummaryLine());
-            result.put("instructions", "Apply with: git apply " + outputPath);
+            result.put("hasConsolidation", bundle.hasConsolidation());
+
+            StringBuilder instructions = new StringBuilder();
+            instructions.append("Apply with: git apply ").append(outputPath);
+            if (bundle.hasConsolidation()) {
+                instructions.append("\nThen delete files: ");
+                instructions.append(String.join(", ", bundle.filesToDelete().stream()
+                    .map(p -> p.getFileName().toString())
+                    .toList()));
+            }
+            result.put("instructions", instructions.toString());
 
             log.info("Approved and wrote patch {} to {}", patchId, outputPath);
 
