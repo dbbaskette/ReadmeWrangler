@@ -34,6 +34,7 @@ public class ReadmePolisherAgent {
     private final BadgeTool badgeTool;
     private final PatchBuilderTool patchBuilder;
     private final VisualEnhancementTool visualEnhancer;
+    private final DocConsolidationTool docConsolidation;
 
     public ReadmePolisherAgent(
         RepoScannerTool repoScanner,
@@ -42,7 +43,8 @@ public class ReadmePolisherAgent {
         TocTool tocTool,
         BadgeTool badgeTool,
         PatchBuilderTool patchBuilder,
-        VisualEnhancementTool visualEnhancer
+        VisualEnhancementTool visualEnhancer,
+        DocConsolidationTool docConsolidation
     ) {
         this.repoScanner = repoScanner;
         this.linter = linter;
@@ -51,6 +53,7 @@ public class ReadmePolisherAgent {
         this.badgeTool = badgeTool;
         this.patchBuilder = patchBuilder;
         this.visualEnhancer = visualEnhancer;
+        this.docConsolidation = docConsolidation;
     }
 
     /**
@@ -64,6 +67,11 @@ public class ReadmePolisherAgent {
         // Execute sub-goals in sequence
         RepoSnapshot snapshot = scanRepositoryGoal(context);
         context = context.withSnapshot(snapshot);
+
+        // Consolidate documentation files if needed
+        if (shouldConsolidateDocs(context.repoPath())) {
+            consolidateDocsGoal(context.repoPath());
+        }
 
         Path readmeFile = findReadme(snapshot);
         if (readmeFile == null) {
@@ -241,6 +249,59 @@ public class ReadmePolisherAgent {
         result = visualEnhancer.enhanceVisualHierarchy(result);
 
         return result;
+    }
+
+    /**
+     * Action: Consolidate documentation files into DEVELOPMENT.md.
+     */
+    @Action(description = "Consolidate multiple documentation files into DEVELOPMENT.md")
+    public void consolidateDocsGoal(Path repoPath) throws IOException {
+        log.info("Consolidating documentation files into DEVELOPMENT.md");
+
+        DocConsolidationTool.ConsolidationResult result = docConsolidation.consolidateDocumentation(repoPath);
+
+        if (!result.hasConsolidation()) {
+            log.info("No documentation files to consolidate");
+            return;
+        }
+
+        // Write DEVELOPMENT.md
+        Path developmentFile = repoPath.resolve("DEVELOPMENT.md");
+        Files.writeString(developmentFile, result.consolidatedContent());
+        log.info("Created DEVELOPMENT.md with consolidated documentation");
+
+        // Remove old files
+        for (Path oldFile : result.filesToRemove()) {
+            try {
+                Files.delete(oldFile);
+                log.info("Removed consolidated file: {}", oldFile.getFileName());
+            } catch (IOException e) {
+                log.warn("Failed to remove file {}: {}", oldFile, e.getMessage());
+            }
+        }
+
+        log.info("Documentation consolidation complete: {} files merged", result.filesToRemove().size());
+    }
+
+    /**
+     * Condition: Should consolidate documentation files?
+     */
+    @Condition
+    public boolean shouldConsolidateDocs(Path repoPath) {
+        try {
+            // Check if there are multiple documentation files (excluding README and CLAUDE.md)
+            long docCount = Files.list(repoPath)
+                .filter(p -> p.getFileName().toString().endsWith(".md"))
+                .filter(p -> !p.getFileName().toString().equals("README.md"))
+                .filter(p -> !p.getFileName().toString().equals("CLAUDE.md"))
+                .filter(p -> !p.getFileName().toString().equals("DEVELOPMENT.md"))
+                .count();
+
+            return docCount > 2; // Consolidate if more than 2 additional docs
+        } catch (IOException e) {
+            log.warn("Failed to check documentation files: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
